@@ -6,7 +6,16 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include "utils.h"
 
-int main(int argc, char* argv) {
-		
+int main(int argc, char* argv[]) {
+	// We check that the command is correct
+	if (argc < 2) {
+		usage(argv[0]);
+		exit(0);
+	}
+	
+//	char* file = read_file();
+	
 }
