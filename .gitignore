@@ -1,0 +1,4 @@
+# Compiled source
+./src/obj/*.o
+compress
+decompress

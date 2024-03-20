@@ -1,2 +1,2 @@
-# CDI---GenomeCompress
-Compressor for nucleotide sequences: Adenine, Thymine, Guanine and Cytosine 
+# CDI-GenomeCompress
+Compressor made for files that contain nucleotide sequences (Adenine, Thymine, Guanine and Cytosine)
