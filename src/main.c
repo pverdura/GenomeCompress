@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <dirent.h>
 #include "utils.h"
 #include "define.h"
@@ -25,7 +26,7 @@ int main(int argc, char* argv[]) {
 		DIR *dirp = opendir(argv[d]);
 
 		if (!dirp) { // Error
-			perror("opendir()");
+			print_error(ERR_OPDIR);
 		}
 		else { // We compress each file of the directory
 			struct dirent *dp;
@@ -33,34 +34,45 @@ int main(int argc, char* argv[]) {
 			while ((dp = readdir(dirp))) {	
 				// We compress only the files
 				if (dp->d_type == DT_REG) {
-					char file[516];
-					char dest[516];
+					char file[512];
+					char dir[128]; 
+					char dest[512];
 					int n = strlen(argv[d]);
 
 					// We canonicalize the path
 					if (argv[d][n-1] == '/') {
 						sprintf(file, "%s%s", argv[d], dp->d_name);
 						argv[d][n-1] = '_';
-						sprintf(dest, "%scomp", argv[d]);
+						sprintf(dir, "%scomp", argv[d]);
 					} else {
 						sprintf(file, "%s/%s", argv[d], dp->d_name);
-						sprintf(dest, "%s_comp", argv[d]);
+						sprintf(dir, "%s_comp", argv[d]);
 					}
+
+					int ret = mkdir(dir, 0755);
+					if (ret < 0) {
+						print_error(ERR_MKDIR);
+						break;
+					}
+
 					printf("Compressing %s...\n", file);
 					
 					// Compress the file
-					int ret = compress(file, dest); 
-
+					ret = compress(file, dest); 
 					if (ret < 0) {
-						print_error(ret);
+						print_error(-ret);
 						break;
 					}
 				}
 			}
 	
 			if (errno) { // Error
-				perror("readdir()");
+				print_error(ERR_RDDIR);
 			}
+		}
+		int ret = closedir(dirp);
+		if (ret < 0) {
+			print_error(ERR_CLSDIR);
 		}
 	}
 }
