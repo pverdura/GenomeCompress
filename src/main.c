@@ -51,11 +51,8 @@ int main(int argc, char* argv[]) {
 					// Compress the file
 					int ret = compress(file, dest); 
 
-					if (ret == -ERR_OPEN) {
-						perror("open()");	
-						break;
-					} else if (ret == -ERR_READ) {
-						perror("read()");
+					if (ret < 0) {
+						print_error(ret);
 						break;
 					}
 				}

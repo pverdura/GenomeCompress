@@ -17,6 +17,11 @@
 void usage(char* exec);
 
 /*
+ * Prints the identified error
+ */
+void print_error(int err);
+
+/*
  * Compresses the file at the path 'file' to the foleder 'dest'
  */
 int compress(char* file, char *dest);

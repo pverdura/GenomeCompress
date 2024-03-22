@@ -10,6 +10,17 @@ void usage(char* exec) {
 	write(1, buff, n);
 }
 
+void print_error(int err)
+{
+	if (err == -ERR_OPEN) {
+		perror("open()");
+	} else if (err == -ERR_READ) {
+		perror("read()");
+	} else if (err == -ERR_WRITE) {
+		perror("write()");
+	}	
+}
+
 int compress(char* file, char* dest) {
 	char segment[128];
 	int ret;
