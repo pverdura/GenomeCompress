@@ -8,10 +8,17 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include "define.h"
 
 /*
  * Prints how must be used the executable
  */
 void usage(char* exec);
+
+/*
+ * Compresses the file at the path 'file' to the foleder 'dest'
+ */
+int compress(char* file, char *dest);
 
 #endif // __UTILS_H

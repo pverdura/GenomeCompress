@@ -10,6 +10,27 @@ void usage(char* exec) {
 	write(1, buff, n);
 }
 
-void compress(char* file) {
-	
+int compress(char* file, char* dest) {
+	char segment[128];
+	int ret;
+	int rd_fd = open(file, O_RDONLY);
+	//int wr_fd = creat(dest, );
+
+	if (rd_fd < 0) { //|| wr_fd < 0) {
+		return -ERR_OPEN;
+	}
+
+	while ((ret = read(rd_fd, segment, sizeof(segment))) > 0) {	
+		write(1, segment, ret);	
+	}
+
+	if (ret < 0) { // Error
+		close(rd_fd);
+		//close(wr_fd);
+		return -ERR_READ;
+	}
+
+	close(rd_fd);
+	//close(wr_fd);
+	return 0;
 }
