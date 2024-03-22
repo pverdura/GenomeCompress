@@ -1,4 +1,5 @@
-./src/obj/*.o
+/obj/*.o
 compress
 *.swp
 *~
+tests/
