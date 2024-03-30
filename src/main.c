@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
 					}
 				}
 	
-				if (errno) { // Error
+				if (dp != NULL && errno) { // Error
 					print_error(ERR_RDDIR);
 				}
 			}
