@@ -30,46 +30,44 @@ int main(int argc, char* argv[]) {
 		}
 		else { // We compress each file of the directory
 			struct dirent *dp;
-				
-			while ((dp = readdir(dirp))) {	
-				// We compress only the files
-				if (dp->d_type == DT_REG) {
-					char file[512];
-					char dir[128]; 
-					char dest[512];
-					int n = strlen(argv[d]);
+			char dir_orig[128];
+			char dir_dest[128];
 
-					// We canonicalize the path
-					if (argv[d][n-1] == '/') {
-						sprintf(file, "%s%s", argv[d], dp->d_name);
-						argv[d][n-1] = '_';
-						sprintf(dir, "%scomp", argv[d]);
-					} else {
-						sprintf(file, "%s/%s", argv[d], dp->d_name);
-						sprintf(dir, "%s_comp", argv[d]);
-					}
+			// We canonicalize the paths
+			setPaths(argv[d], &dir_orig, &dir_dest);
+			int ret = mkdir(dir_dest, 0775);
+			
+			// We create the directory used to save the compressed files
+			if (ret < 0 && errno != EEXIST) {
+				print_error(ERR_MKDIR);
+			}
+			else {
+				while ((dp = readdir(dirp))) {	
+					if (dp->d_type == DT_REG) { // We compress only the files
+						char file_orig[512];
+						char file_dest[512];
 
-					int ret = mkdir(dir, 0755);
-					if (ret < 0) {
-						print_error(ERR_MKDIR);
-						break;
-					}
+						sprintf(file_orig, "%s%s", dir_orig, dp->d_name);
+						sprintf(file_dest, "%s%s", dir_dest, dp->d_name);
 
-					printf("Compressing %s...\n", file);
+						printf("Compressing %s...\n", file_orig);
 					
-					// Compress the file
-					ret = compress(file, dest); 
-					if (ret < 0) {
-						print_error(-ret);
-						break;
+						// Compress the file
+						ret = compress(file_orig, file_dest); 
+						
+						if (ret < 0) {
+							print_error(-ret);
+							break;
+						}
 					}
 				}
-			}
 	
-			if (errno) { // Error
-				print_error(ERR_RDDIR);
+				if (errno) { // Error
+					print_error(ERR_RDDIR);
+				}
 			}
 		}
+
 		int ret = closedir(dirp);
 		if (ret < 0) {
 			print_error(ERR_CLSDIR);

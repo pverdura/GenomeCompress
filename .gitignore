@@ -3,3 +3,4 @@ compress
 *.swp
 *~
 tests/
+tests_comp/

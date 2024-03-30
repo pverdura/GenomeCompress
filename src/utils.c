@@ -43,10 +43,11 @@ int setPaths(char* dir, void* dir_orig, void* dir_dest) {
 	if (dir[n-1] == '/') {
 		sprintf(dir_orig, "%s", dir);
 		dir[n-1] = '_';
-		size_dest = sprintf(dir_dest, "%scomp", dir);
-	} else {
+		size_dest = sprintf(dir_dest, "%scomp/", dir);
+	}
+	else {
 		sprintf(dir_orig, "%s/", dir);
-		size_dest = sprintf(dir_dest, "%s_comp", dir);
+		size_dest = sprintf(dir_dest, "%s_comp/", dir);
 	}
 
 	return size_dest;
@@ -61,26 +62,22 @@ int compress(char* file, char* dest) {
 		return -ERR_OPFILE;
 	}
 
-	int wr_fd = creat(dest, 644);	
+	int wr_fd = creat(dest, 00644);	
 	if (wr_fd < 0) {
 		close(rd_fd);
 		return -ERR_MKDIR;	
 	}
 
 	while ((size = read(rd_fd, block, sizeof(block))) > 0) {	
-		
-
-		write(1, block, size);	
-		
+		write(wr_fd, block, size);	
 	}
+	
+	close(rd_fd);
+	close(wr_fd);
 
 	if (size < 0) { // Error
-		close(rd_fd);
-		close(wr_fd);
 		return -ERR_RDFILE;
 	}
 
-	close(rd_fd);
-	close(wr_fd);
 	return 0;
 }
