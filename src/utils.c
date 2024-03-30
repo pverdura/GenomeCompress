@@ -69,7 +69,40 @@ int compress(char* file, char* dest) {
 	}
 
 	while ((size = read(rd_fd, block, sizeof(block))) > 0) {	
-		write(wr_fd, block, size);	
+		int comprData = 0;	// Binary data converted to a char
+		char comprBlk[size/4];	// Compressed block
+	
+		/*
+		 * We convert the binary string to a compacted string:
+		 *
+		 * Each character is 8 bits long. Using 2 bits for each
+		 * character, we can insert 4 nucleotides in one char
+		 */
+		for (int i = 0; i < size;) {
+			comprData = comprData << 2;	// We shift the bits
+			
+			if (block[i] == 'A') {
+				comprData += 0;	// We add '00'
+			}
+			else if (block[i] == 'T') {
+				comprData += 1;	// We add '01'
+			}
+			else if (block[i] == 'G') {
+				comprData += 2;	// We add '10'
+			}
+			else {	// block[i] == 'C'
+				comprData += 3;	// We add '11'
+			}
+
+			++i;
+			// We added 4 nucleotides to a character
+			if (!(i % 4)) {
+				comprBlk[i/4] = comprData + ' ';
+				comprData = 0;
+			}
+		}
+
+		write(wr_fd, comprBlk, size/4);	
 	}
 	
 	close(rd_fd);
