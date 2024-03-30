@@ -36,9 +36,25 @@ void print_error(int err) {
 	}	
 }
 
+int setPaths(char* dir, void* dir_orig, void* dir_dest) {
+	int n = strlen(dir);
+	int size_dest;
+
+	if (dir[n-1] == '/') {
+		sprintf(dir_orig, "%s", dir);
+		dir[n-1] = '_';
+		size_dest = sprintf(dir_dest, "%scomp", dir);
+	} else {
+		sprintf(dir_orig, "%s/", dir);
+		size_dest = sprintf(dir_dest, "%s_comp", dir);
+	}
+
+	return size_dest;
+}
+
 int compress(char* file, char* dest) {
-	char segment[128];
-	int ret;
+	char block[128];
+	int size;
 
 	int rd_fd = open(file, O_RDONLY);
 	if (rd_fd < 0) {
@@ -51,11 +67,14 @@ int compress(char* file, char* dest) {
 		return -ERR_MKDIR;	
 	}
 
-	while ((ret = read(rd_fd, segment, sizeof(segment))) > 0) {	
-		write(1, segment, ret);	
+	while ((size = read(rd_fd, block, sizeof(block))) > 0) {	
+		
+
+		write(1, block, size);	
+		
 	}
 
-	if (ret < 0) { // Error
+	if (size < 0) { // Error
 		close(rd_fd);
 		close(wr_fd);
 		return -ERR_RDFILE;
