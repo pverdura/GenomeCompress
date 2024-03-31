@@ -13,7 +13,7 @@ FLAGS := -I $(INC_DIR) -Wall
 
 # We define the executable files
 SRC := $(shell find $(SRC_DIR) -name '*.c')
-SRC := $(subst $(SRC_DIR)/main.c,, $(SRC))
+SRC := $(subst $(SRC_DIR)/compress.c,, $(SRC))
 OBJ := $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 EXE := compress
 
@@ -22,7 +22,7 @@ $(OBJ_DIR)/%.o: $(SRC)
 	$(CC) $(FLAGS) -c -o $@ $<
 
 # We compile the main program
-$(EXE): $(SRC_DIR)/main.c $(OBJ) 
+$(EXE): $(SRC_DIR)/compress.c $(OBJ) 
 	$(CC) $(FLAGS) -o $@ $^
 
 echo:
