@@ -36,21 +36,27 @@ void print_error(int err) {
 	}	
 }
 
-int setPaths(char* dir, void* dir_orig, void* dir_dest) {
+void setComPaths(char* dir, void* dir_orig, void* dir_dest) {
 	int n = strlen(dir);
-	int size_dest;
 
 	if (dir[n-1] == '/') {
-		sprintf(dir_orig, "%s", dir);
-		dir[n-1] = '_';
-		size_dest = sprintf(dir_dest, "%scomp/", dir);
+		dir[n-1] = '\0';
 	}
-	else {
-		sprintf(dir_orig, "%s/", dir);
-		size_dest = sprintf(dir_dest, "%s_comp/", dir);
+	
+	sprintf(dir_orig, "%s", dir);
+	sprintf(dir_dest, "%s.gco", dir);
+}
+
+void setDecPaths(char* dir, void* dir_orig, void* dir_dest) {
+	int n = strlen(dir);
+
+	if (dir[n-1] == '/') {
+		dir[n-1] = '\0';
 	}
 
-	return size_dest;
+	sprintf(dir_orig, "%s", dir);
+	dir[n-5] = '\0'; // We remove the substring ".gco"
+	sprintf(dir_dest, "%s", dir);
 }
 
 int compress(char* file, char* dest) {

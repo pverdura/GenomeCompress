@@ -1,6 +1,6 @@
 /*
- * decompress.c - Main code for decompressing files that contain
- *				  decompressed nucleotide sequences.
+ * compress.c - Main code for compressing files that contain
+ *				compressed nucleotide sequences.
  *
  * Authors: Paula Chen Guzman, Pol Verdura Mejías
  */
@@ -30,14 +30,15 @@ int main(int argc, char* argv[]) {
 		}
 		else { // We compress each file of the directory
 			struct dirent *dp;
-			char dir_orig[128];
-			char dir_dest[128];
+			char dir_orig[150];
+			char dir_dest[150];
 
 			// We canonicalize the paths
-			setPaths(argv[d], &dir_orig, &dir_dest);
-			int ret = mkdir(dir_dest, 0775);
-			
+			setComPaths(argv[d], &dir_orig, &dir_dest);
+
 			// We create the directory used to save the compressed files
+			int ret = mkdir(dir_dest, 0775);
+
 			if (ret < 0 && errno != EEXIST) {
 				print_error(ERR_MKDIR);
 			}
@@ -47,13 +48,13 @@ int main(int argc, char* argv[]) {
 						char file_orig[512];
 						char file_dest[512];
 
-						sprintf(file_orig, "%s%s", dir_orig, dp->d_name);
-						sprintf(file_dest, "%s%s", dir_dest, dp->d_name);
+						sprintf(file_orig, "%s/%s", dir_orig, dp->d_name);
+						sprintf(file_dest, "%s/%s", dir_dest, dp->d_name);
 
-						printf("Decompressing %s...\n", file_orig);
+						printf("Compressing %s...\n", file_orig);
 					
 						// Decompress the file
-						ret = decompress(file_orig, file_dest); 
+						ret = compress(file_orig, file_dest); 
 						
 						if (ret < 0) {
 							print_error(-ret);

@@ -22,10 +22,14 @@ void usage(char* exec);
 void print_error(int err);
 
 /*
- * Canonicalizes the origin and destiny path, and returns the
- * string size of dir_dest
+ * Canonicalizes the origin and destiny path for compressing
  */
-int setPaths(char* dir, void* dir_orig, void* dir_dest);
+void setComPaths(char* dir, void* dir_orig, void* dir_dest);
+
+/*
+ * Canonicalizes the origin and destiny path for decompressing
+ */
+void setDecPaths(char* dir, void* dir_orig, void* dir_dest);
 
 /*
  * Compresses the file at the path 'file' to the foleder 'dest'

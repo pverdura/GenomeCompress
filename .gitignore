@@ -3,5 +3,6 @@ compress
 decompress
 *.swp
 *~
+*.gco/
 tests/
 tests_comp/
