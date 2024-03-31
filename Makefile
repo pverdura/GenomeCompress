@@ -12,22 +12,24 @@ CC := gcc
 FLAGS := -I $(INC_DIR) -Wall
 
 # We define the executable files
-SRC := $(shell find $(SRC_DIR) -name '*.c')
-SRC := $(subst $(SRC_DIR)/compress.c,, $(SRC))
+EXE_COM := compress
+EXE_DEC := decompress
+SRC := $(shell find $(SRC_DIR) -name '*.c' | grep -v $(EXE_COM))
 OBJ := $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
-EXE := compress
+EXE := $(EXE_COM) $(EXE_DEC)
+
+all: $(EXE)
 
 # We compile all the objects
 $(OBJ_DIR)/%.o: $(SRC)
 	$(CC) $(FLAGS) -c -o $@ $<
 
-# We compile the main program
-$(EXE): $(SRC_DIR)/compress.c $(OBJ) 
+# We compile the main programs
+$(EXE_COM): $(SRC_DIR)/$(EXE_COM).c $(OBJ) 
 	$(CC) $(FLAGS) -o $@ $^
 
-echo:
-	echo $(OBJ)
-	echo $(SRC)
+$(EXE_DEC): $(SRC_DIR)/$(EXE_DEC).c $(OBJ) 
+	$(CC) $(FLAGS) -o $@ $^
 
 .PHONY: clean
 clean:
