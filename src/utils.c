@@ -52,6 +52,7 @@ void setDecPaths(char* dir, void* dir_orig, void* dir_dest) {
 
 	if (dir[n-1] == '/') {
 		dir[n-1] = '\0';
+		n--;
 	}
 
 	sprintf(dir_orig, "%s", dir);
@@ -119,4 +120,8 @@ int compress(char* file, char* dest) {
 	}
 
 	return 0;
+}
+
+void decompress(char* file, char* dest) {
+
 }

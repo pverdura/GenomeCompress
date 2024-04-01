@@ -6,3 +6,4 @@ decompress
 *.gco/
 tests/
 tests_comp/
+*(*)
