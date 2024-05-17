@@ -34,3 +34,11 @@ $(EXE_DEC): $(SRC_DIR)/$(EXE_DEC).c $(OBJ)
 .PHONY: clean
 clean:
 	rm -f $(OBJ_DIR)/*.o *~ $(EXE)
+
+clean-tests: clean-comp clean-decomp
+
+clean-comp:
+	rm -rf *.gco
+
+clean-decomp:
+	rm -rf *\(*\)
