@@ -36,4 +36,9 @@ void setDecPaths(char* dir, void* dir_orig, void* dir_dest);
  */
 int compress(char* file, char *dest);
 
+/*
+ * Decompresses the file at the path 'file' to the foleder 'dest'
+ */
+int decompress(char* file, char *dest);
+
 #endif // __UTILS_H

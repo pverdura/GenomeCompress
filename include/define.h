@@ -4,6 +4,8 @@
 #ifndef __DEFINE_H
 #define __DEFINE_H
 
+#define NUCLXCHAR	4
+
 #define ERR_OPDIR	1
 #define ERR_CLSDIR	5
 #define ERR_RDDIR	10

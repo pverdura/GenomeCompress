@@ -61,10 +61,10 @@ int main(int argc, char* argv[]) {
 						sprintf(file_orig, "%s/%s", dir_orig, dp->d_name);
 						sprintf(file_dest, "%s/%s", dir_dest, dp->d_name);
 
-						printf("Decompressing %s...\n", file_orig);
+						printf("Decompressing %s to %s...\n", file_orig, file_dest);
 					
 						// Compress the file
-						ret = compress(file_orig, file_dest); 
+						ret = decompress(file_orig, file_dest); 
 						
 						if (ret < 0) {
 							print_error(-ret);
