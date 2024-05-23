@@ -60,7 +60,7 @@ void setDecPaths(char* dir, void* dir_orig, void* dir_dest) {
 	sprintf(dir_dest, "%s", dir);
 }
 
-char getNucl(int seq, int pos) {
+char getNucl(unsigned int seq, int pos) {
 	unsigned int nBin = (seq / (1 << 2*(3-pos))) % 4; 
 	//printf("nBin: %ud\n", nBin);
 
@@ -98,6 +98,7 @@ int compress(char* file, char* dest) {
 
 	while ((size = read(rd_fd, block, sizeof(block))) > 0) {	
 		char comprBlk [size/NUCLXCHAR];	// Compressed block
+		printf("size: %d\n", size);
 
 		/*
 		 * We convert the binary string to a compacted string:
@@ -130,10 +131,13 @@ int compress(char* file, char* dest) {
 			}
 		}
 
-		fwrite(comprBlk, 1, size/NUCLXCHAR, wr_fp);
+		if (strlen(comprBlk) > 0) {
+			fwrite(comprBlk, 1, size/NUCLXCHAR, wr_fp);
+		}
 	}
 	
 	//We write the reminder of letters that must be read in the last character
+	printf("bits: %.8b\nn: %d\n", comprData, i%NUCLXCHAR); 
 	fprintf(wr_fp, "%u%d", comprData, i%NUCLXCHAR);
 
 	close(rd_fd);
@@ -147,9 +151,6 @@ int compress(char* file, char* dest) {
 }
 
 int decompress(char* file, char* dest) {
-	char block[128];
-	int size;
-
 	FILE *rd_fp = fopen(file, "rb");
 	if (rd_fp == NULL) {
 		return -ERR_OPFILE;
@@ -161,28 +162,83 @@ int decompress(char* file, char* dest) {
 		return -ERR_MKDIR;	
 	}
 
-	// We read size*NUCLXCHAR nucleotides
-	while ((size = fread(block, 1, sizeof(block), rd_fp)) > 0) {	
-		char decomprBlk[NUCLXCHAR*size]; // String with decompressed data
+	int size;
+	int end = 0;
+	char lastBytes[2];
 
-		/*
-		 * We convert the compacted string to a char string:
-		 *
-		 * Each character is 8 bits long. Using 2 bits for each
-		 * character, we can insert 4 nucleotides in one char
-		 */
-		for (int i = 0; i < size; ++i) {
-			unsigned int decomprChar = (unsigned int) block[i];
+	// We read all the compressed file
+	while (!end) {
+		char block[128];
 
-			// We read the NUCLXCHAR nucleotides
-			for (int j = 0; j < NUCLXCHAR; j++) {
-				decomprBlk[i*NUCLXCHAR+j] = getNucl(decomprChar, j);
-			}	
+		// We read size*NUCLXCHAR nucleotides
+		size = fread(block, 1, sizeof(block), rd_fp);
+
+		if (size < 0) { // Error
+			end = 1;
 		}
+		else if (size == 0) { // The previous block has the end of file
+			int reminder = lastBytes[1] - '0';
+			char extra[reminder];
 
-		write(wr_fd, decomprBlk, strlen(decomprBlk));
+			for (int i = 0; i < reminder; ++i) {
+				extra[i] = getNucl((unsigned int) lastBytes[0], i);
+			}
+
+			write(wr_fd, extra, reminder);
+			end = 1;
+		}
+		else if (size == 1) { // The current and previous block have the end of file
+			int reminder = block[0] - '0';
+			char extra[NUCLXCHAR+reminder];
+			
+			// Include data that wasn't part of the end of file
+			for (int i = 0; i < NUCLXCHAR; ++i) {
+				extra[i] = getNucl((unsigned int) lastBytes[0], i);
+			}
+
+			// Previous data that was part of the end of file
+			for (int i = 0; i < reminder; ++i) {
+				extra[NUCLXCHAR+i] = getNucl((unsigned int) lastBytes[1], i); 
+			}
+
+			write(wr_fd, extra, NUCLXCHAR+reminder);
+			end = 1;
+		}
+		else { // The previous block has not the end of file
+			char extra[2*NUCLXCHAR];
+
+			for (int i = 0; i < 2; ++i) {
+				for (int j = 0; j < NUCLXCHAR; ++j) {
+					extra[i*NUCLXCHAR+j] = getNucl((unsigned int)lastBytes[i], j);
+				}
+			}
+
+			write(wr_fd, extra, strlen(extra));
+
+			char decomprBlk[NUCLXCHAR*size]; // String with decompressed data
+		
+			/*
+			 * We convert the compacted string to a char string:
+			 *
+			 * Each character is 8 bits long. Using 2 bits for each
+			 * character, we can insert 4 nucleotides in one char
+			 */
+			for (int i = 0; i < size-2; ++i) {
+				// We read the NUCLXCHAR nucleotides
+				for (int j = 0; j < NUCLXCHAR; ++j) {
+					decomprBlk[i*NUCLXCHAR+j] = getNucl((unsigned int)block[i], j);
+				}	
+			}
+
+			lastBytes[0] = block[size-2];
+			lastBytes[1] = block[size-1];
+
+			if (strlen(decomprBlk)) {
+				write(wr_fd, decomprBlk, strlen(decomprBlk));
+			}
+		}
 	}
-	
+
 	fclose(rd_fp);
 	close(wr_fd);
 
