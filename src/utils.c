@@ -212,7 +212,7 @@ int decompress(char* file, char* dest) {
 						extra[i*NUCLXCHAR+j] = getNucl((unsigned int)lastBytes[i], j);
 					}
 				}
-				fwrite(extra, sizeof(char), strlen(extra), wr_fp);
+				fwrite(extra, sizeof(char), 2*NUCLXCHAR, wr_fp);
 			}
 
 			char decomprBlk[NUCLXCHAR*size]; // String with decompressed data
