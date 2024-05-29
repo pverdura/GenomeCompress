@@ -13,10 +13,9 @@ FLAGS := -I $(INC_DIR) -Wall
 
 # We define the executable files
 EXE_COM := compress
-EXE_DEC := decompress
 SRC := $(shell find $(SRC_DIR) -name '*.c' | grep -v $(EXE_COM))
 OBJ := $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
-EXE := $(EXE_COM) $(EXE_DEC)
+EXE := $(EXE_COM)
 
 all: $(EXE)
 
@@ -24,16 +23,13 @@ all: $(EXE)
 $(OBJ_DIR)/%.o: $(SRC)
 	$(CC) $(FLAGS) -c -o $@ $<
 
-# We compile the main programs
+# We compile the main program
 $(EXE_COM): $(SRC_DIR)/$(EXE_COM).c $(OBJ) 
-	$(CC) $(FLAGS) -o $@ $^
-
-$(EXE_DEC): $(SRC_DIR)/$(EXE_DEC).c $(OBJ) 
-	$(CC) $(FLAGS) -o $@ $^
+	$(CC) $(FLAGS) -o $@.cdi $^
 
 .PHONY: clean
 clean:
-	rm -f $(OBJ_DIR)/*.o *~ $(EXE)
+	rm -f $(OBJ_DIR)/*.o *~ $(EXE).cdi
 
 clean-tests: clean-comp clean-decomp
 

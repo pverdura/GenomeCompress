@@ -1,5 +1,4 @@
-compress
-decompress
+*.cdi
 *.swp
 *~
 *.gco/
