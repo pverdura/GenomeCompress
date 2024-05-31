@@ -41,29 +41,45 @@ int main(int argc, char* argv[]) {
 	
 	// We go though all directories
 	for (int d = 0; d < counter; ++d) {
-		DIR *dirp = opendir(directories[d]);
+		DIR *dirp;
+		
+		struct dirent *dp;
+		char dir_orig[150];	// Directory of files to compute
+		char dir_dest[150];	// Directory were the computed files go
+		char dir_aux[120];	// Auxiliar directory
+		char huffman[256];	// File path were we store de huffman code
 
-		if (!dirp) { // Error
+		// We canonicalize the paths
+		if (comp) {
+			setComPaths(directories[d], &dir_orig, &dir_aux);
+			sprintf(dir_dest, "%s/files", dir_aux);
+		}
+		else {	// (!comp)
+			char aux[120];
+			setDecPaths(directories[d], &aux, &dir_aux);
+			sprintf(dir_dest, "%s", dir_aux);
+			sprintf(dir_orig, "%s/files", aux);
+		}
+		
+		dirp = opendir(dir_orig);
+		sprintf(huffman, "%s/huffman", dir_aux);
+		printf("%s\n", dir_dest);
+
+		// We check there are no errors
+		if (!dirp) {
 			print_error(ERR_OPDIR);
 		}
-		else { // We compress each file of the directory
-			struct dirent *dp;
-			char dir_orig[150];
-			char dir_aux[120];
-			char dir_dest[150];
-
-			// We canonicalize the paths
-			if (comp) {
-				setComPaths(directories[d], &dir_orig, &dir_dest);
-			}
-			else {	// (!comp)
-				setDecPaths(directories[d], &dir_orig, &dir_aux);
-				sprintf(dir_dest, "%s", dir_aux);
-			}
+		// We compress each file of the directory
+		else {
 			// We create the directory used to save the de/compressed files
-			int ret = mkdir(dir_dest, 0775);
+			int ret;
 
-			if (!comp) {
+			if (comp) {
+				mkdir(dir_aux, 0755);
+				ret = mkdir(dir_dest, 0755);
+			}
+			else {
+				ret = mkdir(dir_dest, 0775);
 				int count = 0;
 
 				// We check the directory doesn't exist
@@ -74,40 +90,85 @@ int main(int argc, char* argv[]) {
 				}
 			}
 
-			if (ret < 0 && (errno != EEXIST || !comp)) {
+			// We check there are no errors
+			if (ret < 0 && errno != EEXIST) {
 				print_error(ERR_MKDIR);
 			}
+			// We get the number of files
 			else {
-				while ((dp = readdir(dirp))) {	
+				int dir_size = 0;
+				while ((dp = readdir(dirp))) {
 					if (dp->d_type == DT_REG) { // We compress only the files
-						char file_orig[512];
-						char file_dest[512];
-
-						sprintf(file_orig, "%s/%s", dir_orig, dp->d_name);
-						sprintf(file_dest, "%s/%s", dir_dest, dp->d_name);
-
-						if (comp) {
-							printf("Compressing %s to %s...\n", file_orig, file_dest);
-					
-							// Compress the file
-							ret = compress(file_orig, file_dest); 
-						}
-						else {	// (!comp)
-							printf("Decompressing %s to %s...\n", file_orig, file_dest);
-					
-							// Decompress the file
-							ret = decompress(file_orig, file_dest); 
-						}
-						
-						if (ret < 0) {
-							print_error(-ret);
-							break;
-						}
+						dir_size++;
 					}
 				}
-	
+		
+				ret = closedir(dirp);
+				if (ret < 0) {
+					print_error(ERR_CLSDIR);
+				}
+				printf("Compressing %d files...\n", dir_size);
+
+				dirp = opendir(dir_orig);
+
+				int n = HUFFMAN_S << 4 << 2; 
+				unsigned long int *total_times = calloc(n, sizeof(long int));
+				char* file_orig[dir_size];
+				char* file_dest[dir_size];
+				int counter = 0;
+				
+				for (int i = 0; i < dir_size; ++i) {
+					file_orig[i] = (char*) malloc(sizeof(char)*256);
+					file_dest[i] = (char*) malloc(sizeof(char)*256);
+				}
+
+				// We get the frequency of each word inside the directory
+				while ((dp = readdir(dirp))) {	
+					if (dp->d_type == DT_REG) { // We compress only the files
+						if (comp) {	// We get the huffman code
+							sprintf(file_orig[counter], "%s/%s", dir_orig, dp->d_name);
+							sprintf(file_dest[counter], "%s/%s", dir_dest, dp->d_name);
+
+							printf("Counting %s words\n", file_orig[counter]);
+
+							unsigned long int *parc_times = count_words(HUFFMAN_S, file_orig[counter]);
+							for (int i = 0; i < n; ++i) {
+								total_times[i] += parc_times[i];
+							}
+							free(parc_times);
+						}
+						else {
+							sprintf(file_orig[counter], "%s/%s", dir_orig, dp->d_name);
+							sprintf(file_dest[counter], "%s/%s", dir_dest, dp->d_name);
+						}
+						++counter;
+					}
+				}
+
 				if (dp != NULL && errno) { // Error
+					for (int i = 0; i < dir_size; ++i) {
+						free(file_orig[i]);
+						free(file_dest[i]);
+					}
 					print_error(ERR_RDDIR);
+				}
+				
+				for (int i = 0; i < dir_size; ++i) {
+					if (comp) {
+						printf("Compressing %s to %s...\n", file_orig[i], file_dest[i]);
+						compress(file_orig[i], file_dest[i]);					
+					}
+					else {
+						printf("Decompressing %s to %s...\n", file_orig[i], file_dest[i]);
+						decompress(file_orig[i], file_dest[i]);					
+					}
+				}
+				
+				// Free data structures
+				free(total_times);
+				for (int i = 0; i < dir_size; ++i) {
+					free(file_orig[i]);
+					free(file_dest[i]);
 				}
 			}
 		}

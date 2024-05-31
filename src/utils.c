@@ -4,8 +4,8 @@
 #include "utils.h"
 
 void usage(char* exec) {
-	char buff[128];
-	int n = sprintf(buff, "Usage: %s <directory> ...\n  Where <directory> is the path to the directory that contains\n  all the nucleotide files.\n", exec);
+	char buff[256];
+	int n = sprintf(buff, "Usage: %s [-{c|x}] <directory> ...\n  Where <directory> is the path to the directory that contains\n  all the nucleotide files.\n\n  -c must be used if you want to compress the previous files.\n  -x must be used if you want to decompress the previous files.\n", exec);
 	
 	write(1, buff, n);
 }
@@ -32,6 +32,9 @@ void print_error(int err) {
 			break;
 		case ERR_WRFILE:
 			perror("write()");
+			break;
+		case ERR_COMPR:
+			perror("compressLZ78()");
 			break;
 	}	
 }
@@ -78,16 +81,189 @@ char getNucl(unsigned int seq, int pos) {
 	}
 }
 
-int compress(char* file, char* dest) {
-	char block[128];
-	int size;
+int getNuclVal(char nucl) {
+	int val = -1;
+	switch (nucl) {
+		case 'A': val = 0; break;	// '00'
+		case 'T': val = 1; break;	// '01'
+		case 'G': val = 2; break;	// '10'
+		case 'C': val = 3; break;	// '11'
+		default: break;
+	}
+	return val;
+}
 
+int compressLZ78(char* file, char* dest) {
+	char block[BLOCK_SIZE];
+	char dictionary[DICT_SIZE];
+
+	// We open the source file
 	FILE *rd_fp = fopen(file, "r");
 	if (rd_fp == NULL) {
 		return -ERR_OPFILE;
 	}
 
+	// We open the destiny file
 	FILE *wr_fp = fopen(dest, "wb");	
+	if (wr_fp == NULL) {
+		fclose(rd_fp);
+		return -ERR_MKDIR;	
+	}
+
+	int size;						// Size of the read file block
+
+	// We read the whole file
+	while ((size = fread(block, sizeof(char), sizeof(block), rd_fp)) > 0) {	
+		unsigned int block_iter = 0;	// Points to the first letter of the word
+										// we will add to the dictionary
+		unsigned int dict_size = 0;		// Dictionary size
+		unsigned char code_block[DICT_SIZE*2];
+		int code_idx = 0;
+
+		// We read the whole block
+		while (block_iter < size) {
+
+			char current_word[BLOCK_SIZE];	// Block word we are adding in the dict.
+			int found = 1;	// Variable for finding the current word in the dictionary
+			int ws = 0;		// Word size to insert in the dictionary
+			int wi = 0;		// Iterator for the words we want to add in the dictionary
+			unsigned short pos = 0;			// Dictionary iterator
+			unsigned short last_pos = 0;	// Last matching position
+
+			// We keep elongating the current word until it's not in the dictionary
+			while (found && (block_iter + ws < size)) {
+				int ok = 1;	// Word is matching 
+				found = 0;	// Reset the found flag
+				wi = 0;		// Reset the word iterator
+				current_word[ws] = block[block_iter+ws];	// Update the new word
+
+				// We check if the current word is in the dictionary
+				for (pos = 0; pos < dict_size; pos++, wi++) { //&& !found; pos++, wi++) {
+					// ',' means the dictionary word ended
+					if (ok && (dictionary[pos] == ',') && (wi == ws+1)) {
+						found = 1;
+						break;
+					}
+
+					// We reset the flags because we will read a new word
+					if (dictionary[pos] == ',') {
+						ok = 1;
+						wi = -1;
+					} 
+					// Word doesn't match
+					else if (ok && (dictionary[pos] != current_word[wi])) {
+						ok = 0;
+					}
+					//printf("%c", dictionary[pos]);
+				}
+				//printf("\n");
+				if (found)
+					last_pos = pos;
+
+				// We increase the word size
+				ws++;
+			}
+			
+			if (dict_size+ws > DICT_SIZE) {
+				fclose(rd_fp);
+				fclose(wr_fp);
+				return -ERR_COMPR;
+			}
+
+			// We add the word in the dictionary
+			for (int i = 0; i < ws; ++i) {	
+				dictionary[dict_size+i] = current_word[i];
+			}
+			dict_size += ws+1;
+			dictionary[dict_size-1] = ',';
+			block_iter += ws;
+
+			// We insert the word to the compressed code
+			code_block[code_idx] = (last_pos >> 5);
+
+			code_block[code_idx+1] = (last_pos % (1 << 5)) << 3;
+			code_block[code_idx+1] += getNuclVal(current_word[ws-1]) << 1;
+			code_block[code_idx+1] += (block_iter >= size);
+
+			code_idx += 2;
+		}
+		fwrite(code_block, 1, code_idx, wr_fp);
+	}
+
+	fclose(rd_fp);
+	fclose(wr_fp);
+
+	return 0;
+}
+
+/*int decompressLZ78(char* file, char* dest) {
+	
+}*/
+
+unsigned long int* count_words(int length, char* file) {
+	int n = length << 4 << 2;
+	unsigned long int* times = (unsigned long int*) calloc(n, sizeof(long int));
+
+	FILE *rd_fp = fopen(file, "r");
+	//FILE *rd_fp = fopen(thread_data->file_orig, "r");
+	if (rd_fp == NULL) {
+		print_error(ERR_OPFILE);
+		exit(0);
+	}
+
+	char block[512*length];
+	int size;
+
+	while ((size = fread(block, sizeof(char), sizeof(block), rd_fp)) > 0) {	
+		int i = 0;
+
+		for (; i < size/length; i++) {
+			int value = 0;
+
+			for (int j = 0; j < length; j++) {
+				value = (value << 2) + getNuclVal(block[i*length+j]);
+			}
+			times[value]++;
+		}
+/*
+		if (i % length) {
+			int j = (int)size/length;
+			int value = 0;
+
+			for (j *= length; j < size; j++) {
+				value += getNuclVal(block[i*length+j]) << (j*2);
+			}
+			times[value]++;
+		}
+*/
+	}
+	
+	fclose(rd_fp);
+
+	if (size < 0) { // Error
+		free(times);
+		print_error(ERR_RDFILE);
+		exit(0);
+	}
+
+	return times;
+}
+
+int compress(char* file, char* dest) {
+//void* compress(void* args) {
+	//thread_data_t *thread_data = (thread_data_t*) args;
+
+	char block[128];
+	int size;
+
+	FILE *rd_fp = fopen(file, "r");
+	//FILE *rd_fp = fopen(thread_data->file_orig, "r");
+	if (rd_fp == NULL) {
+		return -ERR_OPFILE;
+	}
+
+	FILE *wr_fp = fopen(dest, "wb");	
+	//FILE *wr_fp = fopen(thread_data->file_dest, "wb");	
 	if (wr_fp == NULL) {
 		fclose(rd_fp);
 		return -ERR_MKDIR;	
@@ -143,12 +319,17 @@ int compress(char* file, char* dest) {
 }
 
 int decompress(char* file, char* dest) {
+//void* decompress(void* args) {
+	//thread_data_t *thread_data = (thread_data_t*) args;
+
 	FILE *rd_fp = fopen(file, "rb");
+	//FILE *rd_fp = fopen(thread_data->file_orig, "rb");
 	if (rd_fp == NULL) {
 		return -ERR_OPFILE;
 	}
 
 	FILE *wr_fp = fopen(dest, "wb");	
+	//FILE *wr_fp = fopen(thread_data->file_dest, "wb");	
 	if (wr_fp == NULL) {
 		fclose(rd_fp);
 		return -ERR_MKDIR;	

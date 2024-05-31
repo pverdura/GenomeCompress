@@ -34,11 +34,23 @@ void setDecPaths(char* dir, void* dir_orig, void* dir_dest);
 /*
  * Compresses the file at the path 'file' to the foleder 'dest'
  */
+int compressLZ78(char* file, char *dest);
+
+/*
+ * Compresses the file at the path 'file' to the foleder 'dest'
+ */
 int compress(char* file, char *dest);
+//void* compress(void* args);
 
 /*
  * Decompresses the file at the path 'file' to the foleder 'dest'
  */
 int decompress(char* file, char *dest);
+//void* decompress(void* args);
+
+unsigned long int* count_words(int lenght, char* file);
+
+void BurrowsWheeler(char* file, char *dest);
+
 
 #endif // __UTILS_H
